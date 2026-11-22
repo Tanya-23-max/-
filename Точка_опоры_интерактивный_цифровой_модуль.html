@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Точка опоры — Цифровой тренажер и конструктор профилактики (РБ)</title>
+    <!-- Подключение Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключение шрифта Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        trust: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        ocean: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Плавные анимации и стилизация скроллбара */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Подсветка манипулятивных фраз в чате */
+        .hook-phrase {
+            background-color: #fef3c7;
+            border-bottom: 2px dashed #d97706;
+            color: #92400e;
+            padding: 1px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .hook-phrase:hover {
+            background-color: #fde68a;
+            transform: scale(1.02);
+        }
+
+        .hook-phrase.discovered {
+            background-color: #fee2e2;
+            border-bottom: 2px solid #dc2626;
+            color: #991b1b;
+        }
+
+        /* Стилизация фона чата в стиле мессенджера */
+        .chat-bg {
+            background-color: #e5eff5;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Всплывающее уведомление (Toast вместо alert) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Шапка приложения -->
+    <header class="bg-gradient-to-r from-ocean-900 via-ocean-800 to-trust-800 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <!-- Логотип-щит (SVG) -->
+                    <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center border border-white/20 shrink-0">
+                        <svg class="w-6 h-6 text-trust-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl sm:text-2xl font-bold tracking-tight">ТОЧКА ОПОРЫ</h1>
+                            <span class="hidden sm:inline-block text-xs font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-trust-500/30 text-trust-100 border border-trust-400/30">
+                                Пространство доверия • РБ
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-blue-100/90">Интерактивный конструктор профилактических решений для педагогов и учащихся</p>
+                    </div>
+                </div>
+
+                <!-- Индикатор для мультиборда / QR-режим -->
+                <div class="flex items-center gap-2 self-start md:self-auto">
+                    <button onclick="togglePresentationMode()" id="btn-present" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition flex items-center gap-2 border border-white/15">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Режим мультиборда</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Навигационные вкладки -->
+            <nav class="mt-4 flex overflow-x-auto pb-1 gap-2 no-scrollbar" aria-label="Разделы приложения">
+                <button onclick="switchTab('simulator')" id="tab-simulator" class="nav-btn active px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap bg-white text-ocean-900 shadow-sm">
+                    <span>💬</span>
+                    <span>1. Детектор манипуляций</span>
+                </button>
+                <button onclick="switchTab('quiz')" id="tab-quiz" class="nav-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap text-blue-100 hover:bg-white/10">
+                    <span>⚖️</span>
+                    <span>2. Мифы и реальность (ст. 328)</span>
+                </button>
+                <button onclick="switchTab('constructor')" id="tab-constructor" class="nav-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap text-blue-100 hover:bg-white/10">
+                    <span>🧩</span>
+                    <span>3. Конструктор урока</span>
+                </button>
+                <button onclick="switchTab('help')" id="tab-help" class="nav-btn px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap text-blue-100 hover:bg-white/10">
+                    <span>🆘</span>
+                    <span>4. Точка помощи (РБ)</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- =================================================================== -->
+        <!-- ВКЛАДКА 1: ИНТЕРАКТИВНЫЙ СИМУЛЯТОР «ДЕТЕКТОР МАНИПУЛЯЦИЙ»           -->
+        <!-- =================================================================== -->
+        <section id="view-simulator" class="tab-view fade-in">
+            <div class="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <span>🔍 Тренажер «Детектор манипуляций в мессенджере»</span>
+                        <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-ocean-100 text-ocean-800">14–17 лет</span>
+                    </h2>
+                    <p class="text-sm text-slate-600 mt-1">
+                        <strong>Задание для класса:</strong> Найдите и нажмите на <span class="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border-b border-dashed border-amber-600 font-medium">выделенные фразы-крючки</span> в сообщениях собеседника, чтобы раскрыть психологическую уловку, а затем выберите безопасную стратегию ответа.
+                    </p>
+                </div>
+
+                <!-- Выбор сценария -->
+                <div class="flex flex-wrap gap-2 shrink-0">
+                    <button onclick="loadScenario(0)" id="scen-btn-0" class="scen-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-ocean-600 text-white shadow-sm transition">
+                        Сценарий 1: «Легкий заработок»
+                    </button>
+                    <button onclick="loadScenario(1)" id="scen-btn-1" class="scen-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                        Сценарий 2: «На слабо»
+                    </button>
+                    <button onclick="loadScenario(2)" id="scen-btn-2" class="scen-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                        Сценарий 3: «Шантаж»
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Левая колонка: Окно мессенджера -->
+                <div class="lg:col-span-7 flex flex-col bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                    <!-- Шапка чата -->
+                    <div class="bg-slate-800 text-white px-4 py-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div id="chat-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center font-bold text-lg shadow">
+                                💼
+                            </div>
+                            <div>
+                                <div id="chat-contact-name" class="font-semibold text-sm sm:text-base">HR_Manager_Minsk</div>
+                                <div id="chat-contact-status" class="text-xs text-emerald-400 flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> был(а) только что • аккаунт не подтвержден
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="resetScenario()" class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition" title="Начать сценарий заново">
+                            ↻ Сброс
+                        </button>
+                    </div>
+
+                    <!-- Область сообщений -->
+                    <div id="chat-messages" class="chat-bg p-4 sm:p-5 space-y-4 min-h-[320px] max-h-[440px] overflow-y-auto flex-grow">
+                        <!-- Сообщения рендерятся через JS -->
+                    </div>
+
+                    <!-- Варианты ответа ученика -->
+                    <div class="p-4 bg-slate-50 border-t border-slate-200">
+                        <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 flex items-center justify-between">
+                            <span>Выберите вашу реакцию:</span>
+                            <span id="hooks-counter" class="text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Найдено уловок: 0 / 3</span>
+                        </div>
+                        <div id="chat-options" class="space-y-2">
+                            <!-- Кнопки ответов рендерятся через JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка: Панель аналитики, шкала безопасности и разбор уловок -->
+                <div class="lg:col-span-5 flex flex-col gap-5">
+                    <!-- Шкала личной безопасности -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-bold text-slate-700">Индекс личной и правовой безопасности</span>
+                            <span id="safety-score-text" class="text-lg font-extrabold text-trust-600">70%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden border border-slate-200">
+                            <div id="safety-bar" class="bg-trust-500 h-full transition-all duration-500 rounded-full" style="width: 70%"></div>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2">
+                            Показатель меняется в зависимости от того, распознаете ли вы манипуляции и какой вариант поведения выбираете.
+                        </p>
+                    </div>
+
+                    <!-- Блок расшифровки нажатой манипуляции -->
+                    <div id="hook-inspector" class="bg-amber-50/80 border border-amber-200 p-5 rounded-2xl shadow-sm transition-all">
+                        <div class="flex items-center gap-2 text-amber-800 font-bold text-sm mb-2">
+                            <span>🧠 Психологический детектор уловок</span>
+                        </div>
+                        <p id="hook-inspector-text" class="text-sm text-amber-900/90 leading-relaxed">
+                            Нажмите на любую подсвеченную фразу в тексте сообщения вербовщика слева, чтобы увидеть, какой психологический прием используется против подростка.
+                        </p>
+                    </div>
+
+                    <!-- Блок обратной связи после выбора ответа -->
+                    <div id="feedback-card" class="hidden bg-white border-2 border-trust-500 p-5 rounded-2xl shadow-md fade-in">
+                        <div id="feedback-badge" class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-2"></div>
+                        <h3 id="feedback-title" class="text-base font-bold text-slate-800 mb-1.5"></h3>
+                        <p id="feedback-desc" class="text-sm text-slate-600 leading-relaxed mb-3"></p>
+                        <div id="feedback-law" class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-700"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- ВКЛАДКА 2: ПРАВОВАЯ ВИКТОРИНА «МИФЫ И РЕАЛЬНОСТЬ» (СТ. 328 УК РБ)    -->
+        <!-- =================================================================== -->
+        <section id="view-quiz" class="tab-view hidden fade-in">
+            <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">⚖️ Интерактив «Мифы и реальность: правовой навигатор РБ»</h2>
+                    <p class="text-sm text-slate-600 mt-1">
+                        Обсудите утверждение с классом, проголосуйте за «МИФ» или «РЕАЛЬНОСТЬ» и откройте официальный комментарий.
+                    </p>
+                </div>
+                <div class="flex items-center gap-3 bg-ocean-50 px-4 py-2.5 rounded-xl border border-ocean-100 shrink-0">
+                    <div class="text-xs text-ocean-800 font-medium">Верных ответов класса:</div>
+                    <div id="quiz-score" class="text-xl font-extrabold text-ocean-700">0 / 6</div>
+                    <button onclick="resetQuiz()" class="ml-2 text-xs bg-white hover:bg-ocean-100 text-ocean-700 font-semibold px-2.5 py-1.5 rounded-lg border border-ocean-200 transition">
+                        Сбросить
+                    </button>
+                </div>
+            </div>
+
+            <div id="quiz-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Карточки викторины генерируются JS -->
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- ВКЛАДКА 3: КОНСТРУКТОР УРОКА ДЛЯ ПЕДАГОГА                           -->
+        <!-- =================================================================== -->
+        <section id="view-constructor" class="tab-view hidden fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Параметры настройки -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
+                    <h2 class="text-xl font-bold text-slate-800 mb-1">🧩 Конструктор занятия</h2>
+                    <p class="text-sm text-slate-500 mb-5">Выберите параметры аудитории — система сформирует технологическую карту на основе модулей кейса «Точка опоры».</p>
+
+                    <div class="space-y-4">
+                        <!-- Возраст -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">1. Возрастная группа / аудитория</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" onclick="setBuilderParam('age', '12-14')" id="b-age-12-14" class="builder-age-btn p-3 rounded-xl border-2 border-trust-600 bg-trust-50 text-trust-900 font-semibold text-sm text-left transition">
+                                    👦 12–14 лет
+                                    <span class="block text-xs font-normal text-trust-700 mt-0.5">5–8 классы</span>
+                                </button>
+                                <button type="button" onclick="setBuilderParam('age', '15-17')" id="b-age-15-17" class="builder-age-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm text-left transition">
+                                    🎓 15–17 лет
+                                    <span class="block text-xs font-normal text-slate-500 mt-0.5">9–11 кл. / колледж</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Формат -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">2. Формат и регламент</label>
+                            <select id="builder-format" onchange="generateLessonPlan()" class="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-800 focus:ring-2 focus:ring-trust-500 focus:border-trust-500">
+                                <option value="class45">Классный / информационный час (45 минут)</option>
+                                <option value="training60">Тренинговое занятие с элементами арт-терапии (60–80 минут)</option>
+                                <option value="forum60">Интерактивный форум-театр (60 минут)</option>
+                                <option value="session75">Стратегическая сессия / открытый диалог с родителями (75 минут)</option>
+                            </select>
+                        </div>
+
+                        <!-- Ключевой фокус -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">3. Профилактический фокус</label>
+                            <select id="builder-focus" onchange="generateLessonPlan()" class="w-full p-3 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-800 focus:ring-2 focus:ring-trust-500 focus:border-trust-500">
+                                <option value="cyber">Противодействие интернет-вербовке и «легкому заработку»</option>
+                                <option value="peer">Навыки уверенного отказа и защита от давления сверстников</option>
+                                <option value="law">Правовая грамотность и ответственность (ст. 328 УК РБ)</option>
+                            </select>
+                        </div>
+
+                        <button onclick="generateLessonPlan()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-ocean-700 to-trust-700 hover:from-ocean-800 hover:to-trust-800 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+                            <span>✨ Сформировать технологическую карту</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Сгенерированный результат -->
+                <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-200 mb-4">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-trust-600">Готовый сценарий-конструктор</span>
+                            <h3 id="plan-title" class="text-lg font-bold text-slate-800">Технологическая карта занятия</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="copyLessonPlan()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5">
+                                <span>📋 Скопировать текст</span>
+                            </button>
+                            <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-ocean-50 hover:bg-ocean-100 text-ocean-700 text-xs font-semibold transition flex items-center gap-1.5">
+                                <span>🖨️ Печать</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="plan-output" class="space-y-4 text-sm text-slate-700 leading-relaxed flex-grow">
+                        <!-- Контент генерируется JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- ВКЛАДКА 4: ЭКСТРЕННАЯ ПОМОЩЬ И РЕСУРСЫ РБ («ТОЧКА ПОМОЩИ»)           -->
+        <!-- =================================================================== -->
+        <section id="view-help" class="tab-view hidden fade-in">
+            <div class="mb-6 bg-gradient-to-r from-trust-800 to-ocean-900 text-white p-6 rounded-2xl shadow-md">
+                <h2 class="text-xl sm:text-2xl font-bold mb-2">🆘 Точка помощи: службы поддержки Республики Беларусь</h2>
+                <p class="text-sm text-blue-100 max-w-3xl">
+                    Этот раздел можно вывести на экран в конце любого классного часа или разместить ссылку на него в школьном чате. Нажмите на любой номер телефона, чтобы скопировать его в буфер обмена.
+                </p>
+            </div>
+
+            <!-- Карточки горячих линий -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                <!-- Линия 1 -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">Круглосуточно • Бесплатно</span>
+                            <span class="text-2xl">📞</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">Республиканская детская телефонная линия доверия</h3>
+                        <p class="text-sm text-slate-600 mt-1">Анонимная квалифицированная психологическая помощь несовершеннолетним и их законным представителям в любых кризисных ситуациях.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xl font-extrabold text-ocean-700">8-801-100-16-11</span>
+                        <button onclick="copyText('8-801-100-16-11', 'Номер Детской линии доверия скопирован')" class="px-3.5 py-2 rounded-xl bg-ocean-600 hover:bg-ocean-700 text-white text-xs font-semibold transition">
+                            Скопировать номер
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Линия 2 -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">Психологическая поддержка</span>
+                            <span class="text-2xl">🤝</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">Республиканский центр психологической помощи (РЦПП)</h3>
+                        <p class="text-sm text-slate-600 mt-1">Консультативная помощь учащимся, родителям и педагогическим работникам учреждений образования Республики Беларусь.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xl font-extrabold text-ocean-700">+375 (17) 300-10-06</span>
+                        <button onclick="copyText('+375 (17) 300-10-06', 'Телефон РЦПП скопирован')" class="px-3.5 py-2 rounded-xl bg-ocean-600 hover:bg-ocean-700 text-white text-xs font-semibold transition">
+                            Скопировать номер
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Линия 3 -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-bold">Анонимно • 24/7</span>
+                            <span class="text-2xl">🩺</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">Круглосуточная наркологическая помощь и консультирование</h3>
+                        <p class="text-sm text-slate-600 mt-1">Анонимные консультации врачей-наркологов и психологов по вопросам зависимости, реабилитации и помощи близким.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xl font-extrabold text-ocean-700">+375 (17) 209-09-09</span>
+                        <button onclick="copyText('+375 (17) 209-09-09', 'Номер консультационной линии скопирован')" class="px-3.5 py-2 rounded-xl bg-ocean-600 hover:bg-ocean-700 text-white text-xs font-semibold transition">
+                            Скопировать номер
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Линия 4 -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2.5 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold">Экстренная защита</span>
+                            <span class="text-2xl">🛡️</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">Органы внутренних дел Республики Беларусь</h3>
+                        <p class="text-sm text-slate-600 mt-1">Незамедлительное реагирование при фактах угроз, вымогательства, шантажа в сети Интернет или обнаружении закладок.</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xl font-extrabold text-red-600">102</span>
+                        <button onclick="copyText('102', 'Номер 102 скопирован')" class="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition">
+                            Скопировать номер
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Памятка для учащихся + Официальные порталы -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-7 bg-trust-50 border border-trust-200 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-trust-900 mb-3">📌 Памятка учащемуся: «5 правил уверенного отказа»</h3>
+                    <ul class="space-y-2.5 text-sm text-trust-900">
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-trust-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
+                            <span><strong>Твое «НЕТ» не требует оправданий.</strong> Умение отказать — признак внутренней силы, а не слабости.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-trust-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
+                            <span><strong>Используй технику «Заезженная пластинка»:</strong> спокойно повторяй «Спасибо, мне это неинтересно», не вступая в спор.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-trust-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
+                            <span><strong>Не верь в «безопасный заработок» в мессенджерах.</strong> Легальная работа в РБ оформляется только официально по трудовому договору.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-trust-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">4</span>
+                            <span><strong>Защищай цифровые границы:</strong> не отправляй незнакомцам фото паспорта, банковских карт и геолокацию.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-trust-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">5</span>
+                            <span><strong>Если тебе угрожают — сразу расскажи взрослым.</strong> Своевременное обращение за помощью защитит тебя от беды.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3">🌐 Официальные ресурсы РБ</h3>
+                    <div class="space-y-3 text-sm">
+                        <a href="https://pomogut.by" target="_blank" rel="noopener" class="block p-3 rounded-xl bg-slate-50 hover:bg-ocean-50 border border-slate-200 transition">
+                            <div class="font-bold text-ocean-700">pomogut.by ↗</div>
+                            <div class="text-xs text-slate-600">Информационный ресурс МВД РБ по профилактике наркомании</div>
+                        </a>
+                        <a href="https://rcpp.by" target="_blank" rel="noopener" class="block p-3 rounded-xl bg-slate-50 hover:bg-ocean-50 border border-slate-200 transition">
+                            <div class="font-bold text-ocean-700">rcpp.by ↗</div>
+                            <div class="text-xs text-slate-600">Республиканский центр психологической помощи БГПУ</div>
+                        </a>
+                        <a href="https://mir.pravo.by" target="_blank" rel="noopener" class="block p-3 rounded-xl bg-slate-50 hover:bg-ocean-50 border border-slate-200 transition">
+                            <div class="font-bold text-ocean-700">mir.pravo.by ↗</div>
+                            <div class="text-xs text-slate-600">Детский правовой сайт Республики Беларусь</div>
+                        </a>
+                        <a href="https://adu.by" target="_blank" rel="noopener" class="block p-3 rounded-xl bg-slate-50 hover:bg-ocean-50 border border-slate-200 transition">
+                            <div class="font-bold text-ocean-700">adu.by ↗</div>
+                            <div class="text-xs text-slate-600">Национальный образовательный портал (раздел воспитательной работы)</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Подвал -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <div>Цифровое приложение к методическому кейсу <strong>«Точка опоры»</strong> • Номинация 3: «Пространство доверия»</div>
+            <div>Республика Беларусь • 2026</div>
+        </div>
+    </footer>
+
+    <!-- =================================================================== -->
+    <!-- JAVASCRIPT: ЛОГИКА ВСЕХ ИНТЕРАКТИВНЫХ МОДУЛЕЙ                       -->
+    <!-- =================================================================== -->
+    <script>
+        // --- 1. УПРАВЛЕНИЕ ВКЛАДКАМИ И УВЕДОМЛЕНИЯМИ ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-ocean-900', 'shadow-sm');
+                btn.classList.add('text-blue-100', 'hover:bg-white/10');
+            });
+
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.remove('text-blue-100', 'hover:bg-white/10');
+            activeBtn.classList.add('bg-white', 'text-ocean-900', 'shadow-sm');
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-slate-800 text-white' : 'bg-amber-600 text-white';
+            toast.className = `${bg} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 fade-in`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '⚠️'}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function copyText(text, customMsg) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(customMsg || 'Скопировано в буфер обмена');
+        }
+
+        let isPresentation = false;
+        function togglePresentationMode() {
+            isPresentation = !isPresentation;
+            document.documentElement.style.fontSize = isPresentation ? '18px' : '16px';
+            const btn = document.getElementById('btn-present');
+            btn.classList.toggle('bg-trust-500', isPresentation);
+            showToast(isPresentation ? 'Включен крупный шрифт для мультиборда' : 'Стандартный масштаб интерфейса');
+        }
+
+        // --- 2. ДАННЫЕ И ЛОГИКА СИМУЛЯТОРА «ДЕТЕКТОР МАНИПУЛЯЦИЙ» ---
+        const scenarios = [
+            {
+                contact: "HR_Manager_Minsk",
+                avatar: "💼",
+                status: "неизвестный контакт • пишет впервые",
+                messages: [
+                    {
+                        sender: "them",
+                        time: "16:42",
+                        html: `Привет! Видел твой профиль, ищем толковых ребят в команду. Есть <span class="hook-phrase" data-hook="0">супер-подработка: 150–200 BYN в день</span>, всего 2 часа после учебы. Нужно просто забирать небольшие посылки и оставлять по адресам в твоем районе.`
+                    },
+                    {
+                        sender: "them",
+                        time: "16:43",
+                        html: `Сразу скажу: <span class="hook-phrase" data-hook="1">всё легально и на 100% безопасно</span>, работаем через закрытый бот, полиция не отслеживает. <span class="hook-phrase" data-hook="2">Осталось последнее место в твоем городе, ответь за 5 минут</span>, иначе отдадим другому!`
+                    }
+                ],
+                hooks: [
+                    {
+                        title: "Уловка №1: Сверхприбыль без навыков («Приманка»)",
+                        text: "Обещание неадекватно высокого дохода (150–200 BYN за пару часов) без квалификации и договора — главный признак вербовки в наркобизнес. Легальный курьер не получает таких денег."
+                    },
+                    {
+                        title: "Уловка №2: Иллюзия безнаказанности и анонимности",
+                        text: "Вербовщики намеренно лгут об «анонимности» мессенджеров. На практике средний «срок работы» закладчика до задержания сотрудниками наркоконтроля РБ составляет от нескольких дней до пары недель."
+                    },
+                    {
+                        title: "Уловка №3: Искусственный дефицит и срочность",
+                        text: "Ограничение времени («5 минут», «последнее место») нужно для того, чтобы отключить критическое мышление подростка и не дать ему посоветоваться с родителями."
+                    }
+                ],
+                options: [
+                    {
+                        text: "Согласиться: «Ок, скидывай инструкцию, деньги очень нужны»",
+                        safetyDelta: -60,
+                        badge: "Критическая опасность!",
+                        badgeClass: "bg-red-100 text-red-800",
+                        title: "Прямое вовлечение в особо тяжкое преступление",
+                        desc: "Вы попали в ловушку вербовщика. Как только вы возьмете первый сверток, вы становитесь сбытчиком. Организаторы не будут вас защищать — для них вы расходный материал.",
+                        law: "⚖️ Справка (УК РБ): По ч. 3 и ч. 4 ст. 328 УК РБ незаконный оборот наркотиков с целью сбыта наказывается лишением свободы на срок от 6 до 20 лет. Ответственность наступает с 14 лет."
+                    },
+                    {
+                        text: "Вступить в спор: «Вы же наркошоп? Отстаньте от меня!»",
+                        safetyDelta: -10,
+                        badge: "Небезопасная реакция",
+                        badgeClass: "bg-amber-100 text-amber-800",
+                        title: "Ошибка: вступление в диалог с манипулятором",
+                        desc: "Любой ответ показывает вербовщику, что аккаунт активен, и дает ему возможность начать психологическое давление, лесть или провокации.",
+                        law: "💡 Совет психолога: С вербовщиками нельзя дискутировать. Единственно верная тактика — полное прекращение контакта и блокировка."
+                    },
+                    {
+                        text: "Сделать скриншот, заблокировать аккаунт и показать родителям",
+                        safetyDelta: +30,
+                        badge: "Эталонное решение • Безопасность 100%",
+                        badgeClass: "bg-emerald-100 text-emerald-800",
+                        title: "Вы успешно защитили свои границы и будущее!",
+                        desc: "Вы распознали манипуляцию, не поддались на уловку о «легких деньгах» и правильно зафиксировали факт вербовки.",
+                        law: "🛡️ Алгоритм РБ: Скриншот переписки можно передать родителям или в милицию (102 / чат-бот МВД «Мы всегда рядом»), чтобы заблокировать канал вербовки для других подростков."
+                    }
+                ]
+            },
+            {
+                contact: "Макс (компания со двора)",
+                avatar: "😎",
+                status: "в сети",
+                messages: [
+                    {
+                        sender: "them",
+                        time: "19:15",
+                        html: `Короче, сегодня собираемся за гаражами. Старшие принесли <span class="hook-phrase" data-hook="0">новую жижу для вейпа, чисто расслабиться, никакой химии</span>. Ты же идешь?`
+                    },
+                    {
+                        sender: "them",
+                        time: "19:16",
+                        html: `<span class="hook-phrase" data-hook="1">Все пацаны уже пробовали, один ты вечно правильный</span>. Не будь трусом, <span class="hook-phrase" data-hook="2">один раз попробуешь — ничего не случится</span>, зато уважать в компании будут.`
+                    }
+                ],
+                hooks: [
+                    {
+                        title: "Уловка №1: Маскировка опасного вещества",
+                        text: "Под видом «безобидной жидкости для вейпа» или «травяного сбора» часто распространяются синтетические психотропы, вызывающие мгновенную интоксикацию и зависимость."
+                    },
+                    {
+                        title: "Уловка №2: Давление группой и игра «На слабо»",
+                        text: "Манипулятор бьет по страху подростка оказаться «белой вороной». Настоящее уважение строится на наличии собственного мнения, а не на слепом подчинении толпе."
+                    },
+                    {
+                        title: "Уловка №3: Обесценивание последствий («Один раз не считается»)",
+                        text: "Синтетические вещества поражают нервную и сердечно-сосудистую системы даже при однократном употреблении, вызывая тяжелые отравления."
+                    }
+                ],
+                options: [
+                    {
+                        text: "Поддаться: «Ладно, приду, но только один раз попробую»",
+                        safetyDelta: -50,
+                        badge: "Высокий риск для здоровья и жизни",
+                        badgeClass: "bg-red-100 text-red-800",
+                        title: "Угроза острого отравления и зависимости",
+                        desc: "Неизвестный состав курительной смеси может привести к потере сознания, галлюцинациям и реанимации. К тому же «друзья» в такой ситуации часто просто убегают, боясь ответственности.",
+                        law: "⚖️ Справка (КоАП и УК РБ): Потребление наркотических средств или психотропных веществ в общественном месте, а также их хранение без цели сбыта (ч. 1 ст. 328 УК РБ) влечет административную или уголовную ответственность."
+                    },
+                    {
+                        text: "Оправдываться: «Извини, у меня живот болит и мама домой зовет...»",
+                        safetyDelta: 0,
+                        badge: "Слабая позиция отказа",
+                        badgeClass: "bg-amber-100 text-amber-800",
+                        title: "Оправдания провоцируют повторное давление",
+                        desc: "Когда человек оправдывается, манипулятор понимает, что его можно дожать в следующий раз («Ну завтра-то точно пойдешь?»).",
+                        law: "💡 Совет психолога: Отказ должен быть коротким, спокойным и без выдуманных причин."
+                    },
+                    {
+                        text: "Уверенный отказ: «Спасибо, мне это неинтересно. Пойду на тренировку»",
+                        safetyDelta: +30,
+                        badge: "Уверенное поведение • Безопасность 100%",
+                        badgeClass: "bg-emerald-100 text-emerald-800",
+                        title: "Ассертивный отказ сработал!",
+                        desc: "Вы четко обозначили свою позицию без агрессии и оправданий, сохранив самоуважение и здоровье.",
+                        law: "🛡️ Правило «Точки опоры»: Тот, кто уважает себя и свои цели, всегда вызывает больше реального авторитета, чем ведомый."
+                    }
+                ]
+            },
+            {
+                contact: "Unknown_Curator",
+                avatar: "🎭",
+                status: "скрытый номер",
+                messages: [
+                    {
+                        sender: "them",
+                        time: "21:04",
+                        html: `Ты думал, можешь просто так выйти из чата после того, как узнал условия? <span class="hook-phrase" data-hook="0">Мы пробили твой адрес и школу, завтра скинем переписку директору и в милицию</span>.`
+                    },
+                    {
+                        sender: "them",
+                        time: "21:05",
+                        html: `<span class="hook-phrase" data-hook="1">У тебя есть один выход: отработай сегодня 3 адреса</span>, и мы удалим все данные. <span class="hook-phrase" data-hook="2">Никому не говори, иначе будет хуже</span>.`
+                    }
+                ],
+                hooks: [
+                    {
+                        title: "Уловка №1: Блеф и запугивание",
+                        text: "99% угроз «пробить по IP и сдать в милицию» — это психологический блеф. Самим организаторам наркошопов невыгодно привлекать внимание правоохранительных органов."
+                    },
+                    {
+                        title: "Уловка №2: Ловушка «Отработки»",
+                        text: "Если подросток из страха выполнит требование «отработать», он совершит реальное уголовное преступление и попадет в полную зависимость от шантажистов."
+                    },
+                    {
+                        title: "Уловка №3: Изоляция от помощи («Никому не говори»)",
+                        text: "Шантажисты больше всего боятся, что подросток расскажет обо всем родителям или педагогам, так как в этот момент их власть над ребенком полностью исчезает."
+                    }
+                ],
+                options: [
+                    {
+                        text: "Испугаться и согласиться: «Хорошо, только не пишите в школу!»",
+                        safetyDelta: -65,
+                        badge: "Критическая ошибка!",
+                        badgeClass: "bg-red-100 text-red-800",
+                        title: "Шантаж никогда не заканчивается после «одного раза»",
+                        desc: "Выполнив требование шантажиста, вы дадите ему реальный компромат на себя, и требования будут продолжаться до вашего задержания.",
+                        law: "⚖️ Справка (УК РБ): Примечание к ст. 328 УК РБ гласит: лицо, добровольно сдавшее наркотические средства и активно способствовавшее раскрытию преступления, освобождается от уголовной ответственности."
+                    },
+                    {
+                        text: "Удалить весь чат и никому ничего не рассказывать, сидя в страхе",
+                        safetyDelta: -5,
+                        badge: "Тревожная изоляция",
+                        badgeClass: "bg-amber-100 text-amber-800",
+                        title: "Вы оставили себя один на один с тревогой",
+                        desc: "Удаление переписки лишает вас доказательств того, что вам угрожали, а молчание заставляет переживать стресс в одиночку.",
+                        law: "💡 Совет психолога: Страх уменьшается, когда вы делитесь проблемой с надежным взрослым."
+                    },
+                    {
+                        text: "Сохранить скриншоты угроз, заблокировать и сразу рассказать родителям / психологу",
+                        safetyDelta: +30,
+                        badge: "Абсолютная защита • Безопасность 100%",
+                        badgeClass: "bg-emerald-100 text-emerald-800",
+                        title: "Вы разорвали сценарий шантажиста!",
+                        desc: "Как только вы обращаетесь к родителям, школьному психологу или в милицию, шантаж теряет всякий смысл. Закон на стороне подростка, который сообщил об угрозах.",
+                        law: "📞 Помощь рядом: В любой подобной ситуации можно также анонимно позвонить на Детскую линию доверия 8-801-100-16-11."
+                    }
+                ]
+            }
+        ];
+
+        let currentScenarioIdx = 0;
+        let discoveredHooks = new Set();
+        let safetyScore = 70;
+
+        function loadScenario(idx) {
+            currentScenarioIdx = idx;
+            discoveredHooks.clear();
+            safetyScore = 70;
+            updateSafetyBar();
+
+            // Обновление активной кнопки сценария
+            document.querySelectorAll('.scen-btn').forEach((btn, i) => {
+                if (i === idx) {
+                    btn.className = 'scen-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-ocean-600 text-white shadow-sm transition';
+                } else {
+                    btn.className = 'scen-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
+                }
+            });
+
+            const scen = scenarios[idx];
+            document.getElementById('chat-contact-name').textContent = scen.contact;
+            document.getElementById('chat-avatar').textContent = scen.avatar;
+            document.getElementById('chat-contact-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> ${scen.status}`;
+
+            // Рендер сообщений
+            const msgContainer = document.getElementById('chat-messages');
+            msgContainer.innerHTML = '';
+            scen.messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = 'flex flex-col items-start max-w-[88%] fade-in';
+                div.innerHTML = `
+                    <div class="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-slate-200/80 text-sm text-slate-800 leading-relaxed">
+                        ${msg.html}
+                    </div>
+                    <span class="text-[11px] text-slate-500 mt-1 ml-1">${msg.time}</span>
+                `;
+                msgContainer.appendChild(div);
+            });
+
+            // Навешиваем клики на крючки
+            document.querySelectorAll('.hook-phrase').forEach(el => {
+                el.addEventListener('click', () => {
+                    const hookId = parseInt(el.getAttribute('data-hook'));
+                    el.classList.add('discovered');
+                    discoveredHooks.add(hookId);
+                    document.getElementById('hooks-counter').textContent = `Найдено уловок: ${discoveredHooks.size} / ${scen.hooks.length}`;
+
+                    const hookInfo = scen.hooks[hookId];
+                    document.getElementById('hook-inspector').classList.remove('bg-amber-50/80', 'border-amber-200');
+                    document.getElementById('hook-inspector').classList.add('bg-red-50', 'border-red-300');
+                    document.getElementById('hook-inspector-text').innerHTML = `
+                        <strong class="block text-red-900 mb-1">${hookInfo.title}</strong>
+                        <span class="text-red-800">${hookInfo.text}</span>
+                    `;
+                });
+            });
+
+            document.getElementById('hooks-counter').textContent = `Найдено уловок: 0 / ${scen.hooks.length}`;
+            document.getElementById('hook-inspector').className = 'bg-amber-50/80 border border-amber-200 p-5 rounded-2xl shadow-sm transition-all';
+            document.getElementById('hook-inspector-text').textContent = 'Нажмите на любую подсвеченную фразу в тексте сообщения вербовщика слева, чтобы увидеть, какой психологический прием используется против подростка.';
+            document.getElementById('feedback-card').classList.add('hidden');
+
+            // Рендер кнопок выбора ответа
+            const optContainer = document.getElementById('chat-options');
+            optContainer.innerHTML = '';
+            scen.options.forEach((opt, oIdx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-3 rounded-xl bg-white hover:bg-ocean-50 border border-slate-300 hover:border-ocean-400 text-xs sm:text-sm font-medium text-slate-800 transition shadow-sm flex items-center justify-between gap-2';
+                btn.innerHTML = `<span>${opt.text}</span><span class="text-slate-400">→</span>`;
+                btn.onclick = () => selectChatOption(oIdx);
+                optContainer.appendChild(btn);
+            });
+        }
+
+        function selectChatOption(optIdx) {
+            const scen = scenarios[currentScenarioIdx];
+            const opt = scen.options[optIdx];
+
+            // Добавляем сообщение ученика в чат
+            const msgContainer = document.getElementById('chat-messages');
+            const existingReply = document.getElementById('user-reply-bubble');
+            if (existingReply) existingReply.remove();
+
+            const replyDiv = document.createElement('div');
+            replyDiv.id = 'user-reply-bubble';
+            replyDiv.className = 'flex flex-col items-end self-end ml-auto max-w-[85%] fade-in';
+            replyDiv.innerHTML = `
+                <div class="bg-ocean-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-sm text-sm">
+                    ${opt.text}
+                </div>
+                <span class="text-[11px] text-slate-500 mt-1 mr-1">Вы • только что</span>
+            `;
+            msgContainer.appendChild(replyDiv);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+
+            // Обновляем шкалу безопасности
+            safetyScore = Math.max(5, Math.min(100, 70 + opt.safetyDelta));
+            updateSafetyBar();
+
+            // Показываем карточку разбора
+            const fbCard = document.getElementById('feedback-card');
+            fbCard.classList.remove('hidden', 'border-trust-500', 'border-red-500', 'border-amber-500');
+            if (opt.safetyDelta > 0) fbCard.classList.add('border-trust-500');
+            else if (opt.safetyDelta < -20) fbCard.classList.add('border-red-500');
+            else fbCard.classList.add('border-amber-500');
+
+            const badge = document.getElementById('feedback-badge');
+            badge.className = `inline-block px-3 py-1 rounded-full text-xs font-bold mb-2 ${opt.badgeClass}`;
+            badge.textContent = opt.badge;
+
+            document.getElementById('feedback-title').textContent = opt.title;
+            document.getElementById('feedback-desc').textContent = opt.desc;
+            document.getElementById('feedback-law').innerHTML = opt.law;
+        }
+
+        function updateSafetyBar() {
+            const bar = document.getElementById('safety-bar');
+            const txt = document.getElementById('safety-score-text');
+            bar.style.width = safetyScore + '%';
+            txt.textContent = safetyScore + '%';
+
+            bar.classList.remove('bg-trust-500', 'bg-amber-500', 'bg-red-500');
+            txt.classList.remove('text-trust-600', 'text-amber-600', 'text-red-600');
+
+            if (safetyScore >= 70) {
+                bar.classList.add('bg-trust-500');
+                txt.classList.add('text-trust-600');
+            } else if (safetyScore >= 40) {
+                bar.classList.add('bg-amber-500');
+                txt.classList.add('text-amber-600');
+            } else {
+                bar.classList.add('bg-red-500');
+                txt.classList.add('text-red-600');
+            }
+        }
+
+        function resetScenario() {
+            loadScenario(currentScenarioIdx);
+            showToast('Сценарий перезапущен');
+        }
+
+        // --- 3. ПРАВОВАЯ ВИКТОРИНА «МИФЫ И РЕАЛЬНОСТЬ» ---
+        const quizData = [
+            {
+                statement: "«До достижения 18 лет подростка не могут приговорить к реальному сроку за распространение наркотиков — максимум поставят на учет».",
+                isTruth: false,
+                comment: "МИФ! В Республике Беларусь уголовная ответственность по ст. 328 УК РБ (незаконный оборот наркотических средств, психотропных веществ и их аналогов) наступает с 14 лет."
+            },
+            {
+                statement: "«Если человек сам не употребляет наркотики, а только переносит свертки или рисует трафареты с рекламой наркошопа, он все равно совершает тяжкое преступление».",
+                isTruth: true,
+                comment: "РЕАЛЬНОСТЬ! С точки зрения закона (ч. 3 и ч. 4 ст. 328 УК РБ) работа «закладчиком» квалифицируется как сбыт в составе организованной группы (наказание — от 10 до 20 лет лишения свободы)."
+            },
+            {
+                statement: "«Анонимные мессенджеры и оплата в криптовалюте гарантируют полную невидимость для милиции».",
+                isTruth: false,
+                comment: "МИФ! Подразделения наркоконтроля и кибербезопасности МВД РБ используют современные технологии деанонимизации. Цифровой след остается всегда."
+            },
+            {
+                statement: "«Если подросток осознал ошибку, добровольно сдал запрещенное вещество и сообщил в органы внутренних дел о вербовщиках до задержания, он освобождается от уголовной ответственности».",
+                isTruth: true,
+                comment: "РЕАЛЬНОСТЬ! Это прямо закреплено в Примечании к статье 328 Уголовного кодекса Республики Беларусь."
+            },
+            {
+                statement: "«Кураторы наркомаркетов всегда защищают своих работников и оплачивают им лучших адвокатов в случае проблем».",
+                isTruth: false,
+                comment: "МИФ! Для организаторов наркобизнеса курьер — расходный материал. После задержания аккаунт подростка моментально блокируют, а на его место ищут следующего."
+            },
+            {
+                statement: "«В Беларуси работает круглосуточная бесплатная Детская телефонная линия доверия (8-801-100-16-11), куда можно позвонить анонимно при шантаже или угрозах».",
+                isTruth: true,
+                comment: "РЕАЛЬНОСТЬ! Линия работает 24/7 бесплатно со стационарных и мобильных телефонов по всей территории Республики Беларусь."
+            }
+        ];
+
+        let quizAnswered = {};
+
+        function renderQuiz() {
+            const grid = document.getElementById('quiz-grid');
+            grid.innerHTML = '';
+
+            quizData.forEach((item, index) => {
+                const answered = quizAnswered[index];
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between transition hover:shadow-md';
+
+                let statusHtml = '';
+                if (answered !== undefined) {
+                    const isCorrect = answered === item.isTruth;
+                    statusHtml = `
+                        <div class="mt-4 p-3.5 rounded-xl text-xs leading-relaxed fade-in ${isCorrect ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-red-50 border border-red-200 text-red-900'}">
+                            <div class="font-bold mb-1">${isCorrect ? '✅ Класс ответил верно!' : '❌ Ошибка! Обратите внимание:'}</div>
+                            <div>${item.comment}</div>
+                        </div>
+                    `;
+                } else {
+                    statusHtml = `
+                        <div class="mt-5 grid grid-cols-2 gap-2.5">
+                            <button onclick="answerQuiz(${index}, false)" class="py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs transition">
+                                🚫 ЭТО МИФ
+                            </button>
+                            <button onclick="answerQuiz(${index}, true)" class="py-2.5 px-3 rounded-xl bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white border border-teal-200 font-bold text-xs transition">
+                                ✔️ РЕАЛЬНОСТЬ
+                            </button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Карточка №${index + 1}</span>
+                            ${answered !== undefined ? `<span class="text-xs font-bold ${item.isTruth ? 'text-teal-600' : 'text-rose-600'}">${item.isTruth ? 'РЕАЛЬНОСТЬ' : 'МИФ'}</span>` : ''}
+                        </div>
+                        <p class="text-sm font-semibold text-slate-800 leading-relaxed">${item.statement}</p>
+                    </div>
+                    ${statusHtml}
+                `;
+                grid.appendChild(card);
+            });
+
+            updateQuizScore();
+        }
+
+        function answerQuiz(idx, userChoice) {
+            quizAnswered[idx] = userChoice;
+            renderQuiz();
+        }
+
+        function updateQuizScore() {
+            let correct = 0;
+            Object.keys(quizAnswered).forEach(k => {
+                if (quizAnswered[k] === quizData[k].isTruth) correct++;
+            });
+            document.getElementById('quiz-score').textContent = `${correct} / ${quizData.length}`;
+        }
+
+        function resetQuiz() {
+            quizAnswered = {};
+            renderQuiz();
+            showToast('Викторина сброшена');
+        }
+
+        // --- 4. КОНСТРУКТОР ЗАНЯТИЯ ДЛЯ ПЕДАГОГА ---
+        let builderState = {
+            age: '12-14'
+        };
+
+        function setBuilderParam(key, val) {
+            builderState[key] = val;
+            document.querySelectorAll('.builder-age-btn').forEach(btn => {
+                btn.className = 'builder-age-btn p-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm text-left transition';
+            });
+            const active = document.getElementById(`b-age-${val}`);
+            active.className = 'builder-age-btn p-3 rounded-xl border-2 border-trust-600 bg-trust-50 text-trust-900 font-semibold text-sm text-left transition';
+            generateLessonPlan();
+        }
+
+        function generateLessonPlan() {
+            const age = builderState.age;
+            const format = document.getElementById('builder-format').value;
+            const focus = document.getElementById('builder-focus').value;
+
+            const formatTitles = {
+                class45: "Интерактивный классный час «Лабиринт решений» (45 мин.)",
+                training60: "Тренинговое занятие с элементами арт-терапии «Границы безопасности» (60–80 мин.)",
+                forum60: "Интерактивный форум-театр «Выбор без права на ошибку» (60 мин.)",
+                session75: "Стратегическая сессия «Формула безопасного будущего» (75 мин.)"
+            };
+
+            const focusGoals = {
+                cyber: "развитие критического мышления по отношению к интернет-вербовке в мессенджерах и распознавание манипуляций под видом «легкого заработка».",
+                peer: "формирование навыков ассертивного (уверенного) отказа от сомнительных предложений в компании сверстников и защита личных границ.",
+                law: "повышение правовой грамотности учащихся и осознание неотвратимости ответственности по ст. 328 УК РБ (с 14 лет)."
+            };
+
+            const ageExercises = age === '12-14'
+                ? "Упражнение-активатор «Выбор за мной» и командная работа по матрице «4 П» (Проблема — Последствия — Пути отказа — Помощь) на основе Кейсов № 1–3."
+                : "Психологическая экспертиза скриншотов переписок в тренажере «Детектор манипуляций» и разработка «Анти-скрипта» на основе Кейсов № 4–6.";
+
+            document.getElementById('plan-title').textContent = formatTitles[format];
+
+            const html = `
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div><strong>Целевая аудитория:</strong> учащиеся ${age} лет.</div>
+                    <div class="mt-1"><strong>Цель занятия:</strong> ${focusGoals[focus]}</div>
+                    <div class="mt-1"><strong>Нормативная опора (РБ):</strong> Концепция непрерывного воспитания детей и учащейся молодежи в РБ, Декрет Президента РБ № 6, ст. 328 УК РБ.</div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="p-3.5 rounded-xl border-l-4 border-ocean-600 bg-ocean-50/40">
+                        <div class="font-bold text-ocean-900">Этап 1. Создание «Пространства доверия» и мотивация (7–10 мин.)</div>
+                        <p class="text-xs sm:text-sm text-slate-700 mt-1">
+                            Организация пространства в кругу. Принятие правил группы (конфиденциальность, уважение, право на свое мнение). Разминка на осознание цены ежедневного выбора.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border-l-4 border-trust-600 bg-trust-50/40">
+                        <div class="font-bold text-trust-900">Этап 2. Интерактивный практикум и кейс-анализ (25–35 мин.)</div>
+                        <p class="text-xs sm:text-sm text-slate-700 mt-1">
+                            ${ageExercises} Использование интерактивной викторины «Мифы и реальность» на мультиборде для разбора правовых заблуждений.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border-l-4 border-amber-500 bg-amber-50/40">
+                        <div class="font-bold text-amber-900">Этап 3. Вопросы педагога для фасилитации диалога</div>
+                        <ul class="list-disc list-inside text-xs sm:text-sm text-slate-700 mt-1 space-y-1">
+                            <li>Какие скрытые потребности человека пытается использовать вербовщик?</li>
+                            <li>Почему фразу «Это абсолютно безопасно» можно считать главным сигналом тревоги?</li>
+                            <li>Какие конкретные слова помогут вам уверенно сказать «НЕТ» без оправданий?</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border-l-4 border-slate-600 bg-slate-50">
+                        <div class="font-bold text-slate-900">Этап 4. Рефлексия и ресурс помощи (8–10 мин.)</div>
+                        <p class="text-xs sm:text-sm text-slate-700 mt-1">
+                            Упражнение «Чемодан безопасности» (фиксация личных выводов на стикерах). Вручение памятки «5 правил уверенного отказа» и демонстрация вкладки «Точка помощи» с номером Детской линии доверия <strong>8-801-100-16-11</strong>.
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('plan-output').innerHTML = html;
+        }
+
+        function copyLessonPlan() {
+            const title = document.getElementById('plan-title').textContent;
+            const content = document.getElementById('plan-output').innerText;
+            copyText(`${title}\n\n${content}`, 'Технологическая карта занятия скопирована!');
+        }
+
+        // --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadScenario(0);
+            renderQuiz();
+            generateLessonPlan();
+        });
+    </script>
+</body>
+</html>
